@@ -65,6 +65,23 @@ CREATE TABLE users_roles (
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
+/* Añadiendo tabla de categorías*/
+
+/**
+ * @brief Tabla catálogo para normalizar las categorías documentales.
+ */
+CREATE TABLE categories
+(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Seed Data inicial
+INSERT INTO categories (name) VALUES
+('Ficción'), ('Ingeniería'), ('Matemáticas'), ('Ciencias'), ('Historia');
+
+/*Las modificaciones siguen abajo*/
+
 /*
  * @brief 6. Tabla de Libros/Documentos (Relación 1:N con Usuarios)
  */
@@ -74,12 +91,15 @@ CREATE TABLE books (
     filename VARCHAR(255) NOT NULL,
     title VARCHAR(100) NOT NULL,
     author VARCHAR(100) NOT NULL,
-    category VARCHAR(50),
+    category_id INT NOT NULL,   /*Reemplaza directamente a category*/
     pages INT DEFAULT 0,
     file_path VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
 );
+
+
 
 -- 7. Inserción de Roles Maestros
 INSERT INTO roles (name) VALUES ('admin'), ('client');
@@ -174,20 +194,35 @@ CREATE PROCEDURE sp_create_book(
     IN p_filename VARCHAR(255),
     IN p_title VARCHAR(100),
     IN p_author VARCHAR(100),
-    IN p_category VARCHAR(50),
+    IN p_category_id INT,
     IN p_pages INT,
     IN p_file_path VARCHAR(255)
 )
 BEGIN
-    INSERT INTO books (user_id, filename, title, author, category, pages, file_path)
-    VALUES (p_user_id, p_filename, p_title, p_author, p_category, p_pages, p_file_path);
+    INSERT INTO books (user_id, filename, title, author, category_id, pages, file_path)
+    VALUES (p_user_id, p_filename, p_title, p_author, p_category_id, p_pages, p_file_path);
     SELECT LAST_INSERT_ID() as insertId;
 END //
 
--- Listar libros asociados a un usuario específico
+/*
+ * @brief Lista los libros de un usuario resolviendo el nombre de la categoría.
+ * @note El alias "AS category" mantiene el contrato JSON actual, así
+ * el frontend sigue leyendo b.category sin cambios.
+ */
 CREATE PROCEDURE sp_find_books_by_user(IN p_user_id INT)
 BEGIN
-    SELECT * FROM books WHERE user_id = p_user_id;
+    SELECT b.id, b.user_id, b.category_id, c.name AS category, /*@note cambia todos los lugares de donde se llama a category por su equivalente (_id)*/
+           b.filename, b.title, b.author, b.pages, b.file_path, b.created_at
+    FROM books b
+    JOIN categories c ON b.category_id = c.id
+    WHERE b.user_id = p_user_id;
+END //
+
+/*@brief obtiene el listado de categorías existentes, ordenadas*/
+
+CREATE PROCEDURE sp_get_all_categories()
+BEGIN
+    SELECT id, name FROM categories ORDER BY name;
 END //
 
 /*
