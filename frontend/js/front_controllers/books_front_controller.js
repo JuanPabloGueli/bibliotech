@@ -133,7 +133,7 @@ function renderBooksTable(books)
         {
             openEditBook(b);
         });
-        
+
         tdActions.append(btnEdit, btnDelete);
 
         row.append(tdTitle, tdAuthor, tdCategory, tdPages, tdReading, tdActions);
@@ -163,16 +163,16 @@ async function deleteBook(id)
 
 /**
  * @brief Abre el modal de edición y envía los metadatos modificados al backend.
- * @param {Object} book - Libro seleccionado en la tabla.
- * @note El callback relanza los errores de la API: el modal los muestra
- * en línea y permanece abierto para que el usuario corrija sin perder lo escrito.
+ * @param {Object} book Libro seleccionado en la tabla.
+ * @note El callback relanza errores de la API: el modal los atrapa en línea y permanece abierto para que el usuario corrija sin perder lo escrito.
+ * @note Se incluye el prefijo '/api' en la ruta del request ('PUT') para emparejar correctamente con el enrutador protegido en server.js.
  */
 
 function openEditBook(book)
 {
     showEditBookModal(book, availableCategories, async (payload) =>
     {
-        await apiService.request(`/books/${book.id}`, 'PUT', payload);
+        await apiService.request(`/api/books/${book.id}`, 'PUT', payload);
         loadBooks();
     });
 }
