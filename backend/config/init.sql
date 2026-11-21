@@ -99,7 +99,19 @@ CREATE TABLE books (
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
 );
 
+/**
+ * @brief Tabla para almacenar los registros de auditoría del sistema de manera forense.
+ */
 
+-- Registro de auditoría durable, conservado incluso si se elimina al usuario actor
+CREATE TABLE audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    target VARCHAR(255) NOT NULL,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- 7. Inserción de Roles Maestros
 INSERT INTO roles (name) VALUES ('admin'), ('client');
@@ -269,6 +281,26 @@ END //
 CREATE PROCEDURE sp_delete_book(IN p_id INT, IN p_user_id INT)
 BEGIN
     DELETE FROM books WHERE id = p_id AND user_id = p_user_id;
+END //
+
+/**
+ * @brief Procedimiento almacenado para insertar un registro de auditoría.
+ * @param p_user_id ID del usuario que ejecuta la acción.
+ * @param p_action Código de la acción realizada (ej. DELETE_BOOK).
+ * @param p_target Identificador o descripción del elemento afectado.
+ * @param p_ip_address Dirección IP de origen (opcional).
+ */
+ 
+-- Registrar una acción crítica para análisis posterior
+CREATE PROCEDURE sp_create_audit_log(
+    IN p_user_id INT,
+    IN p_action VARCHAR(50),
+    IN p_target VARCHAR(255),
+    IN p_ip_address VARCHAR(45)
+)
+BEGIN
+    INSERT INTO audit_logs (user_id, action, target, ip_address)
+    VALUES (p_user_id, p_action, p_target, p_ip_address);
 END //
 
 DELIMITER ;
