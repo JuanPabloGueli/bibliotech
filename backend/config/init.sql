@@ -92,8 +92,7 @@ CREATE TABLE audit_logs (
     action VARCHAR(50) NOT NULL,
     target VARCHAR(255) NOT NULL,
     ip_address VARCHAR(45),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 7. Inserción de Roles Maestros
