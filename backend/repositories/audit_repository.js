@@ -17,7 +17,7 @@ class AuditRepository
      * @returns {Promise<void>}
      */
 
-    async create( user_id, action, target, ip_address)
+    async create( {user_id, action, target, ip_address})
     {
         await db.execute('CALL sp_create_audit_log(?, ?, ?, ?)',[user_id, action, target, ip_address || null]);
     }
