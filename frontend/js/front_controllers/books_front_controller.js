@@ -21,27 +21,17 @@ document.addEventListener('DOMContentLoaded', () =>
  * @note Solo createElement/textContent: textContent trata el texto como dato,
  * nunca como HTML, lo que previene XSS aunque un nombre de categoría sea malicioso.
  */
+
 async function loadCategories()
 {
     try
     {
         const categories = await apiService.request('/categories', 'GET');
-        availableCategories = categories; 
+        availableCategories = categories;
 
         const select = document.getElementById('category');
-        
-        // Limpiamos todo lo viejo
         select.replaceChildren();
 
-        // 2. Creamos la opción por defecto puramente con nodos
-        const defaultOption = document.createElement('option');
-        defaultOption.value = "";
-        defaultOption.textContent = "Seleccione una categoría";
-        defaultOption.disabled = true;
-        defaultOption.selected = true;
-        select.appendChild(defaultOption);
-
-        // Iteramos las categorías de la base de datos
         categories.forEach(c =>
         {
             const option = document.createElement('option');
@@ -49,10 +39,42 @@ async function loadCategories()
             option.textContent = c.name;
             select.appendChild(option);
         });
+
+        const newOption = document.createElement('option');
+        newOption.value = '__new__';
+        newOption.textContent = '+ Nueva categoría...';
+        select.appendChild(newOption);
+
+        select.onchange = async () =>
+        {
+            if (select.value !== '__new__')
+            {
+                return;
+            }
+
+            const name = prompt('Nombre de la nueva categoría:');
+
+            if (!name || !name.trim())
+            {
+                select.value = availableCategories[0]?.id ?? '';
+                return;
+            }
+
+            try
+            {
+                const created = await apiService.request('/categories', 'POST', { name: name.trim() });
+                await loadCategories();
+                select.value = created.id;
+            }
+            catch (error)
+            {
+                showModal('Error', 'No se pudo crear la categoría: ' + error.message);
+                select.value = availableCategories[0]?.id ?? '';
+            }
+        };
     }
     catch (error)
     {
-        // Delegamos el error a la UI como corresponde
         showModal('Error', 'No se pudieron cargar las categorías: ' + error.message);
     }
 }
